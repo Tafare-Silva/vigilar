@@ -1,0 +1,83 @@
+# ─────────────────────────────────────────────
+# Core
+# ─────────────────────────────────────────────
+Django==5.1.4
+psycopg2-binary==2.9.10
+python-decouple==3.8
+dj-database-url==2.3.0
+
+# ─────────────────────────────────────────────
+# API / REST
+# ─────────────────────────────────────────────
+djangorestframework==3.15.2
+django-filter==24.3
+drf-spectacular==0.27.2          # OpenAPI / Swagger
+
+# ─────────────────────────────────────────────
+# Async / Tarefas
+# ─────────────────────────────────────────────
+celery==5.4.0
+redis==5.2.1
+django-celery-beat==2.7.0        # agendamento de tarefas
+django-celery-results==2.5.1     # resultados no banco
+
+# ─────────────────────────────────────────────
+# Autenticação / Segurança
+# ─────────────────────────────────────────────
+django-allauth==65.3.0
+django-axes==7.0.1               # proteção brute-force
+argon2-cffi==23.1.0              # hash de senha mais seguro
+
+# ─────────────────────────────────────────────
+# Frontend / Templates
+# ─────────────────────────────────────────────
+django-htmx==1.21.0
+django-widget-tweaks==1.5.0      # customizar widgets nos templates
+whitenoise==6.8.2                # servir static files em prod
+
+# ─────────────────────────────────────────────
+# Formulários / Validação
+# ─────────────────────────────────────────────
+django-crispy-forms==2.3
+crispy-tailwind==1.0.3
+#python-cpf                # validação de CPF
+phonenumbers==8.13.53            # validação de telefones
+
+# ─────────────────────────────────────────────
+# Utilitários
+# ─────────────────────────────────────────────
+Pillow==11.1.0                   # imagens
+django-extensions==3.2.3
+django-model-utils==5.0.0        # TimeStampedModel, StatusField, etc.
+python-dateutil==2.9.0.post0
+pytz==2024.2
+babel==2.16.0                    # formatação de moeda/data pt-BR
+
+# ─────────────────────────────────────────────
+# Storage / Cache
+# ─────────────────────────────────────────────
+django-redis==5.4.0
+
+# ─────────────────────────────────────────────
+# Servidor WSGI
+# ─────────────────────────────────────────────
+gunicorn==23.0.0
+
+# ─────────────────────────────────────────────
+# Monitoramento / Logs
+# ─────────────────────────────────────────────
+sentry-sdk[django]==2.19.2
+django-auditlog==3.0.0           # log de alterações nos models
+python-json-logger==3.2.1        # logs em formato JSON para produção
+
+# ─────────────────────────────────────────────
+# PDF / Relatórios
+# ─────────────────────────────────────────────
+reportlab==4.2.5
+WeasyPrint==62.3
+
+# ─────────────────────────────────────────────
+# Boletos (a definir banco)
+# ─────────────────────────────────────────────
+requests==2.32.3
+httpx==0.28.1                    # cliente HTTP assíncrono

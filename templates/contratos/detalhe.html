@@ -1,0 +1,92 @@
+{% extends "core/base.html" %}
+{% block title %}{{ contrato.numero_contrato }}{% endblock %}
+
+{% block breadcrumb %}
+  <i data-lucide="chevron-right" style="width:13px;height:13px;"></i>
+  <a href="{% url 'contratos:lista' %}" style="color:#64748b;text-decoration:none;">Contratos</a>
+  <i data-lucide="chevron-right" style="width:13px;height:13px;"></i>
+  <span style="color:#1e293b;font-weight:500;">{{ contrato.numero_contrato }}</span>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start;">
+
+  <div>
+    <div class="card" style="padding:20px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:#0f172a;">
+          {{ contrato.numero_contrato }}
+        </div>
+        {% if contrato.status == 'ativo' %}<span class="badge badge-green">Ativo</span>
+        {% elif contrato.status == 'encerrado' %}<span class="badge badge-gray">Encerrado</span>
+        {% elif contrato.status == 'cancelado' %}<span class="badge badge-red">Cancelado</span>
+        {% else %}<span class="badge badge-yellow">{{ contrato.get_status_display }}</span>{% endif %}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">
+        <div><div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;font-weight:700;">Cliente</div>
+          <a href="{% url 'clientes:detalhe' contrato.cliente.pk %}" style="font-weight:600;color:#2748e8;text-decoration:none;font-size:0.875rem;">{{ contrato.cliente.nome_exibicao }}</a></div>
+        <div><div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;font-weight:700;">Serviço</div>
+          <div style="font-size:0.875rem;font-weight:500;color:#1e293b;">{{ contrato.servico.nome }}</div></div>
+        <div><div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;font-weight:700;">Início</div>
+          <div style="font-size:0.875rem;font-weight:500;color:#1e293b;">{{ contrato.data_inicio|date:"d/m/Y" }}</div></div>
+        <div><div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;font-weight:700;">Término</div>
+          <div style="font-size:0.875rem;font-weight:500;color:#1e293b;">{{ contrato.data_fim|date:"d/m/Y"|default:"—" }}</div></div>
+        <div><div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;font-weight:700;">Valor/mês</div>
+          <div style="font-size:0.875rem;font-weight:700;color:#0f172a;">R$ {{ contrato.valor_mensal|floatformat:2 }}</div></div>
+        <div><div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;font-weight:700;">Parcelas</div>
+          <div style="font-size:0.875rem;font-weight:500;color:#1e293b;">{{ contrato.numero_mensalidades }}x</div></div>
+      </div>
+    </div>
+
+    <!-- Mensalidades -->
+    <div class="card" style="overflow:hidden;">
+      <div style="padding:14px 20px;border-bottom:1px solid #f1f5f9;font-weight:600;font-size:0.875rem;color:#0f172a;">
+        Mensalidades geradas
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Vencimento</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th>Pagamento</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in mensalidades %}
+          <tr class="row-{{ m.status }}">
+            <td style="font-weight:600;color:#64748b;font-size:0.8rem;">{{ m.numero_parcela }}</td>
+            <td style="font-size:0.875rem;">{{ m.data_vencimento|date:"d/m/Y" }}</td>
+            <td style="font-weight:600;">R$ {{ m.valor|floatformat:2 }}</td>
+            <td>
+              {% if m.status == 'paga' %}<span class="badge badge-green">Paga</span>
+              {% elif m.status == 'vencida' %}<span class="badge badge-red">Vencida</span>
+              {% else %}<span class="badge badge-yellow">Pendente</span>{% endif %}
+            </td>
+            <td style="font-size:0.8rem;color:#64748b;">
+              {% if m.data_pagamento %}{{ m.data_pagamento|date:"d/m/Y" }}{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="card" style="padding:20px;">
+      <div style="font-weight:700;font-size:0.82rem;color:#0f172a;margin-bottom:14px;">Resumo financeiro</div>
+      {% with pagas=mensalidades|length %}
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:0.82rem;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:#64748b;">Total do contrato</span>
+          <span style="font-weight:600;">R$ {{ contrato.valor_total|floatformat:2 }}</span>
+        </div>
+      </div>
+      {% endwith %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "core/base.html" %}
+{% block title %}Serviços{% endblock %}
+
+{% block breadcrumb %}
+  <i data-lucide="chevron-right" style="width:13px;height:13px;"></i>
+  <span style="color:#1e293b;font-weight:500;">Serviços / Planos</span>
+{% endblock %}
+
+{% block header_actions %}
+  <a href="{% url 'servicos:novo' %}" class="btn btn-primary btn-sm">
+    <i data-lucide="plus" style="width:14px;height:14px;"></i> Novo serviço
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1 class="page-title">Serviços / Planos</h1>
+    <p class="page-subtitle">{{ total_ativos }} ativo{{ total_ativos|pluralize }} de {{ total }} cadastrado{{ total|pluralize }}</p>
+  </div>
+  <a href="{% url 'servicos:novo' %}" class="btn btn-primary">
+    <i data-lucide="plus" style="width:15px;height:15px;"></i> Novo serviço
+  </a>
+</div>
+
+{% if servicos %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+  {% for s in servicos %}
+  <div class="card" style="padding:20px;opacity:{% if s.ativo %}1{% else %}0.6{% endif %};">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+          {% if s.tipo == 'ronda_residencial' %}background:#f0f4ff;
+          {% elif s.tipo == 'ronda_comercial' %}background:#f0fdf4;
+          {% elif s.tipo == 'monitoramento' %}background:#fffbeb;
+          {% else %}background:#f1f5f9;{% endif %}">
+          <i data-lucide="{% if s.tipo == 'monitoramento' %}monitor{% elif s.tipo == 'portaria' %}door-open{% else %}shield-check{% endif %}"
+             style="width:18px;height:18px;
+             {% if s.tipo == 'ronda_residencial' %}color:#2748e8;
+             {% elif s.tipo == 'ronda_comercial' %}color:#16a34a;
+             {% elif s.tipo == 'monitoramento' %}color:#d97706;
+             {% else %}color:#64748b;{% endif %}"></i>
+        </div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;color:#0f172a;line-height:1.2;">{{ s.nome }}</div>
+          {% if s.codigo %}
+          <div style="font-size:0.68rem;color:#94a3b8;font-family:'JetBrains Mono',monospace;">{{ s.codigo }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% if s.ativo %}
+        <span class="badge badge-green" style="flex-shrink:0;">Ativo</span>
+      {% else %}
+        <span class="badge badge-gray" style="flex-shrink:0;">Inativo</span>
+      {% endif %}
+    </div>
+
+    <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:12px;">{{ s.get_tipo_display }}</div>
+
+    {% if s.descricao %}
+    <p style="font-size:0.82rem;color:#64748b;line-height:1.55;margin-bottom:14px;">
+      {{ s.descricao|truncatechars:100 }}
+    </p>
+    {% endif %}
+
+    <div style="height:1px;background:#f1f5f9;margin-bottom:14px;"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div>
+        <div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;font-weight:700;">Valor mensal</div>
+        <div style="font-size:1.2rem;font-family:'Syne',sans-serif;font-weight:700;color:#2748e8;margin-top:2px;">
+          R$ {{ s.valor_mensal|floatformat:2 }}
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;font-weight:700;">Duração mín.</div>
+        <div style="font-size:0.875rem;font-weight:600;color:#0f172a;margin-top:2px;">
+          {{ s.duracao_minima_meses }} mes{{ s.duracao_minima_meses|pluralize:"es" }}
+        </div>
+      </div>
+    </div>
+
+    {% if s.frequencia_rondas_semana %}
+    <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:#64748b;margin-bottom:12px;">
+      <i data-lucide="map-pin" style="width:13px;height:13px;color:#94a3b8;"></i>
+      {{ s.frequencia_rondas_semana }} ronda{{ s.frequencia_rondas_semana|pluralize }} por semana
+      {% if s.horario_inicio and s.horario_fim %}
+      · {{ s.horario_inicio|time:"H:i" }}–{{ s.horario_fim|time:"H:i" }}
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="display:flex;gap:6px;">
+      <a href="{% url 'servicos:editar' s.pk %}" class="btn btn-secondary btn-sm" style="flex:1;justify-content:center;">
+        <i data-lucide="pencil" style="width:13px;height:13px;"></i> Editar
+      </a>
+      <a href="{% url 'servicos:toggle' s.pk %}"
+         class="btn btn-sm {% if s.ativo %}btn-danger{% else %}btn-secondary{% endif %}"
+         style="flex:1;justify-content:center;"
+         onclick="return confirm('{% if s.ativo %}Desativar{% else %}Ativar{% endif %} o serviço \'{{ s.nome }}\'?')">
+        <i data-lucide="{% if s.ativo %}eye-off{% else %}eye{% endif %}" style="width:13px;height:13px;"></i>
+        {% if s.ativo %}Desativar{% else %}Ativar{% endif %}
+      </a>
+      <a href="{% url 'contratos:novo' %}" class="btn btn-primary btn-sm" title="Criar contrato com este serviço">
+        <i data-lucide="file-plus" style="width:13px;height:13px;"></i>
+      </a>
+    </div>
+
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card" style="padding:60px;text-align:center;">
+  <div style="width:56px;height:56px;background:#f0f4ff;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+    <i data-lucide="shield-check" style="width:26px;height:26px;color:#2748e8;"></i>
+  </div>
+  <div style="font-weight:600;color:#1e293b;font-size:1rem;margin-bottom:6px;">Nenhum serviço cadastrado</div>
+  <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:20px;max-width:340px;margin-left:auto;margin-right:auto;">
+    Cadastre os planos de segurança que você oferece. Eles serão usados na criação de contratos.
+  </p>
+  <a href="{% url 'servicos:novo' %}" class="btn btn-primary">
+    <i data-lucide="plus" style="width:15px;height:15px;"></i> Cadastrar primeiro serviço
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}

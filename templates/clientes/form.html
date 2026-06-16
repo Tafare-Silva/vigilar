@@ -1,0 +1,574 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block breadcrumb %}
+  <i data-lucide="chevron-right" style="width:13px;height:13px;"></i>
+  <a href="{% url 'clientes:lista' %}" style="color:#64748b;text-decoration:none;transition:color 0.15s;" class="hover:text-slate-800">Clientes</a>
+  <i data-lucide="chevron-right" style="width:13px;height:13px;"></i>
+  <span style="color:#1e293b;font-weight:500;">{{ titulo }}</span>
+{% endblock %}
+
+{% block content %}
+<div x-data="clienteForm()" x-init="init()">
+
+  <!-- ── Cabeçalho ─────────────────────────────────────────── -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1 class="page-title">{{ titulo }}</h1>
+      <p class="page-subtitle">{{ subtitulo }}</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="{% url 'clientes:lista' %}" class="btn btn-secondary">
+        <i data-lucide="arrow-left" style="width:15px;height:15px;"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <form method="post" id="form-cliente" novalidate>
+    {% csrf_token %}
+
+    <!-- ── Tipo de pessoa ──────────────────────────────────── -->
+    <div class="card" style="padding:24px;margin-bottom:16px;">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:#0f172a;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+        <i data-lucide="user-circle" style="width:18px;height:18px;color:#2748e8;"></i>
+        Tipo de pessoa
+      </h3>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:10px;padding:14px 20px;border:2px solid;border-radius:10px;cursor:pointer;flex:1;min-width:160px;transition:all 0.15s;"
+               :style="tipoPessoa === 'PF'
+                 ? 'border-color:#2748e8;background:#f0f4ff;'
+                 : 'border-color:#e2e8f0;background:#fff;'">
+          <input type="radio" name="tipo_pessoa" value="PF"
+                 x-model="tipoPessoa"
+                 style="accent-color:#2748e8;width:16px;height:16px;" />
+          <div>
+            <div style="font-weight:600;font-size:0.875rem;" :style="tipoPessoa==='PF' ? 'color:#2748e8' : 'color:#1e293b'">
+              <i data-lucide="user" style="width:14px;height:14px;display:inline;margin-right:4px;"></i>
+              Pessoa Física
+            </div>
+            <div style="font-size:0.72rem;color:#94a3b8;margin-top:1px;">CPF, dados pessoais</div>
+          </div>
+        </label>
+
+        <label style="display:flex;align-items:center;gap:10px;padding:14px 20px;border:2px solid;border-radius:10px;cursor:pointer;flex:1;min-width:160px;transition:all 0.15s;"
+               :style="tipoPessoa === 'PJ'
+                 ? 'border-color:#2748e8;background:#f0f4ff;'
+                 : 'border-color:#e2e8f0;background:#fff;'">
+          <input type="radio" name="tipo_pessoa" value="PJ"
+                 x-model="tipoPessoa"
+                 style="accent-color:#2748e8;width:16px;height:16px;" />
+          <div>
+            <div style="font-weight:600;font-size:0.875rem;" :style="tipoPessoa==='PJ' ? 'color:#2748e8' : 'color:#1e293b'">
+              <i data-lucide="building-2" style="width:14px;height:14px;display:inline;margin-right:4px;"></i>
+              Pessoa Jurídica
+            </div>
+            <div style="font-size:0.72rem;color:#94a3b8;margin-top:1px;">CNPJ, empresa</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- ── Nome — ÚNICO, fora de qualquer x-show ─────────────── -->
+<div class="card" style="padding:24px;margin-bottom:16px;">
+  <div>
+    <label class="form-label">
+      <span x-text="tipoPessoa === 'PJ' ? 'Nome do responsável' : 'Nome completo'"></span>
+      <span style="color:#dc2626;">*</span>
+    </label>
+    <input type="text" name="nome" class="form-input"
+           placeholder="Nome completo"
+           value="{{ form.nome.value|default:'' }}" />
+    {% if form.nome.errors %}
+    <p class="form-error">{{ form.nome.errors|join:", " }}</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── Dados Pessoa Física ────────────────────────────────── -->
+<div class="card" style="padding:24px;margin-bottom:16px;"
+     :style="tipoPessoa !== 'PF' ? 'display:none' : ''">
+  <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:#0f172a;margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+    <i data-lucide="user" style="width:18px;height:18px;color:#2748e8;"></i>
+    Dados pessoais
+  </h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+    <div>
+      <label class="form-label">CPF <span style="color:#dc2626;">*</span></label>
+      <input type="text" name="cpf" class="form-input" placeholder="000.000.000-00"
+             x-mask="999.999.999-99"
+             value="{{ form.cpf.value|default:'' }}" />
+      {% if form.cpf.errors %}<p class="form-error">{{ form.cpf.errors|join:", " }}</p>{% endif %}
+    </div>
+    <div>
+      <label class="form-label">RG</label>
+      <input type="text" name="rg" class="form-input" placeholder="00.000.000-0"
+             value="{{ form.rg.value|default:'' }}" />
+    </div>
+    <div>
+      <label class="form-label">Data de nascimento</label>
+      <input type="date" name="data_nascimento" class="form-input"
+             value="{{ form.data_nascimento.value|default:'' }}" />
+    </div>
+  </div>
+</div>
+
+<!-- ── Dados Pessoa Jurídica ──────────────────────────────── -->
+<div class="card" style="padding:24px;margin-bottom:16px;"
+     :style="tipoPessoa !== 'PJ' ? 'display:none' : ''">
+  <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:#0f172a;margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+    <i data-lucide="building-2" style="width:18px;height:18px;color:#2748e8;"></i>
+    Dados da empresa
+  </h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+    <div style="grid-column:1/-1;">
+      <label class="form-label">Razão social <span style="color:#dc2626;">*</span></label>
+      <input type="text" name="razao_social" class="form-input" placeholder="Razão social da empresa"
+             value="{{ form.razao_social.value|default:'' }}" />
+      {% if form.razao_social.errors %}<p class="form-error">{{ form.razao_social.errors|join:", " }}</p>{% endif %}
+    </div>
+    <div>
+      <label class="form-label">Nome fantasia</label>
+      <input type="text" name="nome_fantasia" class="form-input" placeholder="Nome fantasia"
+             value="{{ form.nome_fantasia.value|default:'' }}" />
+    </div>
+    <div>
+      <label class="form-label">CNPJ <span style="color:#dc2626;">*</span></label>
+      <input type="text" name="cnpj" class="form-input" placeholder="00.000.000/0001-00"
+             x-mask="99.999.999/9999-99"
+             value="{{ form.cnpj.value|default:'' }}" />
+      {% if form.cnpj.errors %}<p class="form-error">{{ form.cnpj.errors|join:", " }}</p>{% endif %}
+    </div>
+    <div>
+      <label class="form-label">Inscrição estadual</label>
+      <input type="text" name="inscricao_estadual" class="form-input" placeholder="Inscrição estadual"
+             value="{{ form.inscricao_estadual.value|default:'' }}" />
+    </div>
+  </div>
+</div>
+
+    <!-- ── Contato ─────────────────────────────────────────── -->
+    <div class="card" style="padding:24px;margin-bottom:16px;">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:#0f172a;margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+        <i data-lucide="phone" style="width:18px;height:18px;color:#2748e8;"></i>
+        Contato
+      </h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+
+        <div>
+          <label class="form-label">E-mail</label>
+          <input type="email" name="email" class="form-input" placeholder="email@exemplo.com.br"
+                 value="{{ form.email.value|default:'' }}" />
+          {% if form.email.errors %}<p class="form-error">{{ form.email.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div>
+          <label class="form-label">Telefone fixo</label>
+          <input type="text" name="telefone" class="form-input" placeholder="(00) 0000-0000"
+                 x-mask="(99) 9999-9999"
+                 value="{{ form.telefone.value|default:'' }}" />
+        </div>
+
+        <div>
+          <label class="form-label">Celular</label>
+          <input type="text" name="celular" class="form-input" placeholder="(00) 00000-0000"
+                 x-mask="(99) 99999-9999"
+                 value="{{ form.celular.value|default:'' }}" />
+          {% if form.celular.errors %}<p class="form-error">{{ form.celular.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;padding-top:24px;">
+          <input type="checkbox" name="whatsapp" id="id_whatsapp"
+                 style="width:16px;height:16px;accent-color:#2748e8;cursor:pointer;"
+                 {% if form.whatsapp.value %}checked{% endif %} />
+          <label for="id_whatsapp" style="font-size:0.875rem;color:#475569;cursor:pointer;display:flex;align-items:center;gap:6px;">
+            <i data-lucide="message-circle" style="width:15px;height:15px;color:#25d366;"></i>
+            Celular tem WhatsApp
+          </label>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Endereço ────────────────────────────────────────── -->
+    <div class="card" style="padding:24px;margin-bottom:16px;">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:#0f172a;margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+        <i data-lucide="map-pin" style="width:18px;height:18px;color:#2748e8;"></i>
+        Endereço
+        <span style="font-size:0.72rem;font-weight:500;color:#94a3b8;margin-left:4px;">(busca automática pelo CEP)</span>
+      </h3>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+
+        <!-- CEP com botão de busca -->
+        <div>
+          <label class="form-label">CEP</label>
+          <div style="position:relative;">
+            <input type="text" name="cep" id="id_cep" class="form-input"
+                   placeholder="00000-000"
+                   x-mask="99999-999"
+                   value="{{ form.cep.value|default:'' }}"
+                   @blur="buscarCep($event.target.value)"
+                   style="padding-right:40px;" />
+            <div x-show="cepCarregando"
+                 style="position:absolute;right:10px;top:50%;transform:translateY(-50%);">
+              <svg style="width:16px;height:16px;color:#2748e8;animation:spin 1s linear infinite;" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="31.4" stroke-dashoffset="10"/>
+              </svg>
+            </div>
+            <i x-show="cepOk && !cepCarregando" data-lucide="check-circle"
+               style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#16a34a;"></i>
+            <i x-show="cepErro && !cepCarregando" data-lucide="x-circle"
+               style="position:absolute;right:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#dc2626;"></i>
+          </div>
+          <p x-show="cepErro" x-text="cepErroMsg" style="font-size:0.75rem;color:#dc2626;margin-top:4px;"></p>
+        </div>
+
+        <!-- Logradouro -->
+        <div style="grid-column:span 2;">
+          <label class="form-label">Logradouro</label>
+          <input type="text" name="logradouro" id="id_logradouro" class="form-input"
+                 placeholder="Rua, Avenida, etc."
+                 value="{{ form.logradouro.value|default:'' }}" />
+        </div>
+
+        <!-- Número -->
+        <div>
+          <label class="form-label">Número</label>
+          <input type="text" name="numero" id="id_numero" class="form-input"
+                 placeholder="Nº" value="{{ form.numero.value|default:'' }}"
+                 ref="inputNumero" />
+        </div>
+
+        <!-- Complemento -->
+        <div>
+          <label class="form-label">Complemento</label>
+          <input type="text" name="complemento" id="id_complemento" class="form-input"
+                 placeholder="Apto, Bloco, Casa…"
+                 value="{{ form.complemento.value|default:'' }}" />
+        </div>
+
+        <!-- Bairro -->
+        <div>
+          <label class="form-label">Bairro</label>
+          <input type="text" name="bairro" id="id_bairro" class="form-input"
+                 placeholder="Bairro" value="{{ form.bairro.value|default:'' }}" />
+        </div>
+
+        <!-- Cidade -->
+        <div>
+          <label class="form-label">Cidade</label>
+          <input type="text" name="cidade" id="id_cidade" class="form-input"
+                 placeholder="Cidade" value="{{ form.cidade.value|default:'' }}" />
+        </div>
+
+        <!-- Estado -->
+        <div>
+          <label class="form-label">Estado (UF)</label>
+          <select name="estado" id="id_estado" class="form-input form-select">
+            <option value="">Selecione…</option>
+            {% for uf in estados %}
+            <option value="{{ uf }}" {% if form.estado.value == uf %}selected{% endif %}>{{ uf }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Ponto de referência -->
+        <div style="grid-column:1/-1;">
+          <label class="form-label">Ponto de referência</label>
+          <input type="text" name="ponto_referencia" class="form-input"
+                 placeholder="Ex: Próximo ao mercado Exemplo, casa azul…"
+                 value="{{ form.ponto_referencia.value|default:'' }}" />
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Status e Observações ───────────────────────────── -->
+    <div class="card" style="padding:24px;margin-bottom:24px;">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:#0f172a;margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+        <i data-lucide="settings" style="width:18px;height:18px;color:#2748e8;"></i>
+        Status e observações
+      </h3>
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start;">
+
+        <div>
+          <label class="form-label">Status</label>
+          <select name="status" class="form-input form-select">
+            <option value="ativo"        {% if form.status.value == 'ativo' or not form.status.value %}selected{% endif %}>Ativo</option>
+            <option value="inativo"      {% if form.status.value == 'inativo' %}selected{% endif %}>Inativo</option>
+            <option value="inadimplente" {% if form.status.value == 'inadimplente' %}selected{% endif %}>Inadimplente</option>
+            <option value="suspenso"     {% if form.status.value == 'suspenso' %}selected{% endif %}>Suspenso</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="form-label">Observações internas</label>
+          <textarea name="observacoes" class="form-input" rows="3"
+                    placeholder="Informações adicionais sobre o cliente (visível apenas internamente)…">{{ form.observacoes.value|default:'' }}</textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Criar contrato e mensalidades (opcional) ─────────── -->
+    {% if not editando %}
+    <div class="card" style="margin-bottom:24px;overflow:hidden;" x-data="contratoInline()">
+
+      <!-- Cabeçalho clicável -->
+      <div @click="aberto = !aberto"
+           style="padding:20px 24px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background 0.15s;"
+           :style="aberto ? 'background:#f0f4ff;border-bottom:1px solid #e0eaff;' : 'background:#fff;'">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;transition:background 0.15s;"
+               :style="aberto ? 'background:#2748e8;' : 'background:#f1f5f9;'">
+            <i data-lucide="file-plus" style="width:17px;height:17px;"
+               :style="aberto ? 'color:#fff;' : 'color:#64748b;'"></i>
+          </div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.92rem;"
+                 :style="aberto ? 'color:#2748e8;' : 'color:#0f172a;'">
+              Criar contrato e gerar mensalidades
+            </div>
+            <div style="font-size:0.72rem;color:#94a3b8;margin-top:1px;">
+              Opcional — preencha para já gerar as cobranças ao cadastrar
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span x-show="aberto" class="badge badge-blue" style="font-size:0.7rem;">Ativo</span>
+          <i data-lucide="chevron-down" style="width:16px;height:16px;color:#94a3b8;transition:transform 0.2s;"
+             :style="aberto ? 'transform:rotate(180deg);' : ''"></i>
+        </div>
+      </div>
+
+      <!-- Conteúdo expansível -->
+      <div x-show="aberto" x-transition style="padding:24px;">
+
+        <input type="hidden" name="criar_contrato" :value="aberto ? '1' : '0'" />
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+
+          <!-- Serviço -->
+          <div style="grid-column:1/-1;">
+            <label class="form-label">Serviço / Plano <span style="color:#dc2626;">*</span></label>
+            {% if servicos %}
+            <select name="servico_id" class="form-input form-select"
+                    @change="atualizarValor($event.target)">
+              <option value="">Selecione o serviço…</option>
+              {% for s in servicos %}
+              <option value="{{ s.pk }}"
+                      data-valor="{{ s.valor_mensal }}"
+                      data-duracao="{{ s.duracao_minima_meses }}">
+                {{ s.nome }} — R$ {{ s.valor_mensal|floatformat:2 }}/mês
+              </option>
+              {% endfor %}
+            </select>
+            {% else %}
+            <div class="alert alert-warning" style="font-size:0.82rem;">
+              <i data-lucide="alert-triangle" style="width:15px;height:15px;flex-shrink:0;"></i>
+              Nenhum serviço cadastrado.
+              <a href="/admin/servicos/servico/add/" target="_blank"
+                 style="color:#92400e;font-weight:600;margin-left:4px;">Cadastrar agora →</a>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Valor mensal -->
+          <div>
+            <label class="form-label">Valor da mensalidade (R$) <span style="color:#dc2626;">*</span></label>
+            <div style="position:relative;">
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:0.82rem;color:#94a3b8;font-weight:600;">R$</span>
+              <input type="number" name="valor_mensal"
+                     class="form-input" style="padding-left:32px;"
+                     placeholder="0,00" step="0.01" min="0.01"
+                     x-model="valorMensal" />
+            </div>
+            <p style="font-size:0.72rem;color:#94a3b8;margin-top:3px;">Pode diferir do valor padrão do plano</p>
+          </div>
+
+          <!-- Quantidade de mensalidades -->
+          <div>
+            <label class="form-label">Nº de mensalidades <span style="color:#dc2626;">*</span></label>
+            <input type="number" name="num_mensalidades"
+                   class="form-input" placeholder="12" min="1" max="120"
+                   x-model="numMensalidades" />
+          </div>
+
+          <!-- Data de início -->
+          <div>
+            <label class="form-label">Data de início <span style="color:#dc2626;">*</span></label>
+            <input type="date" name="data_inicio" class="form-input" :value="hoje" />
+          </div>
+
+          <!-- Dia de vencimento -->
+          <div>
+            <label class="form-label">Dia de vencimento <span style="color:#dc2626;">*</span></label>
+            <select name="dia_vencimento" class="form-input form-select">
+              {% for dia in dias_vencimento %}
+              <option value="{{ dia }}" {% if dia == 10 %}selected{% endif %}>Todo dia {{ dia }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Preview resumo -->
+        <div x-show="valorMensal > 0 && numMensalidades > 0"
+             style="margin-top:20px;padding:16px;background:#f8fafc;border-radius:10px;border:1px solid #e8edf5;">
+          <div style="font-size:0.75rem;font-weight:600;color:#64748b;margin-bottom:12px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:0.05em;">
+            <i data-lucide="calculator" style="width:14px;height:14px;color:#2748e8;"></i>
+            Resumo do contrato
+          </div>
+          <div style="display:flex;gap:32px;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Parcelas</div>
+              <div style="font-size:1.2rem;font-family:'Syne',sans-serif;font-weight:700;color:#0f172a;margin-top:2px;"
+                   x-text="numMensalidades + 'x'"></div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Valor/mês</div>
+              <div style="font-size:1.2rem;font-family:'Syne',sans-serif;font-weight:700;color:#0f172a;margin-top:2px;"
+                   x-text="'R$ ' + parseFloat(valorMensal||0).toFixed(2).replace('.',',')"></div>
+            </div>
+            <div>
+              <div style="font-size:0.68rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Total do contrato</div>
+              <div style="font-size:1.2rem;font-family:'Syne',sans-serif;font-weight:700;color:#2748e8;margin-top:2px;"
+                   x-text="'R$ ' + (parseFloat(valorMensal||0) * parseInt(numMensalidades||0)).toFixed(2).replace('.',',')"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Barra de ações fixa ────────────────────────────── -->
+    <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #e8edf5;padding:14px 24px;margin:-24px;margin-top:0;border-radius:0 0 12px 12px;display:flex;align-items:center;justify-content:space-between;z-index:20;">
+      <a href="{% url 'clientes:lista' %}" class="btn btn-secondary">
+        <i data-lucide="x" style="width:15px;height:15px;"></i> Cancelar
+      </a>
+      <div style="display:flex;gap:8px;">
+        {% if editando %}
+        <button type="submit" name="action" value="salvar_continuar" class="btn btn-secondary">
+          <i data-lucide="save" style="width:15px;height:15px;"></i> Salvar e continuar editando
+        </button>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="{% if editando %}save{% else %}user-plus{% endif %}" style="width:15px;height:15px;"></i>
+          {% if editando %}Salvar alterações{% else %}Cadastrar cliente{% endif %}
+        </button>
+      </div>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .form-error { font-size: 0.75rem; color: #dc2626; margin-top: 4px; }
+</style>
+<!-- Alpine mask plugin para máscaras de campo -->
+<script src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js"></script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function contratoInline() {
+  return {
+    aberto: false,
+    valorMensal: '',
+    numMensalidades: 12,
+    hoje: new Date().toISOString().split('T')[0],
+
+    atualizarValor(select) {
+      const opt = select.options[select.selectedIndex];
+      const valor = opt.dataset.valor;
+      const duracao = opt.dataset.duracao;
+      if (valor) this.valorMensal = valor;
+      if (duracao) this.numMensalidades = duracao;
+    },
+  };
+}
+
+function clienteForm() {
+  return {
+    tipoPessoa: '{{ form.tipo_pessoa.value|default:"PF" }}',
+    cepCarregando: false,
+    cepOk: false,
+    cepErro: false,
+    cepErroMsg: '',
+
+    init() {
+      // Garantir que o tipo de pessoa inicial esteja correto
+      const radios = document.querySelectorAll('input[name="tipo_pessoa"]');
+      radios.forEach(r => {
+        if (r.value === this.tipoPessoa) r.checked = true;
+      });
+    },
+
+    async buscarCep(cep) {
+      // Limpar e validar CEP
+      const cepLimpo = cep.replace(/\D/g, '');
+      if (cepLimpo.length !== 8) return;
+
+      this.cepCarregando = true;
+      this.cepOk = false;
+      this.cepErro = false;
+      this.cepErroMsg = '';
+
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+        const data = await res.json();
+
+        if (data.erro) {
+          this.cepErro = true;
+          this.cepErroMsg = 'CEP não encontrado. Preencha o endereço manualmente.';
+          return;
+        }
+
+        // Preencher campos automaticamente
+        this.setField('id_logradouro', data.logradouro || '');
+        this.setField('id_bairro',     data.bairro     || '');
+        this.setField('id_cidade',     data.localidade || '');
+        this.setEstado(data.uf || '');
+
+        this.cepOk = true;
+
+        // Focar no campo Número após preencher
+        setTimeout(() => {
+          const nInput = document.getElementById('id_numero');
+          if (nInput) nInput.focus();
+        }, 100);
+
+      } catch (e) {
+        this.cepErro = true;
+        this.cepErroMsg = 'Erro ao buscar CEP. Verifique sua conexão.';
+      } finally {
+        this.cepCarregando = false;
+        // Re-inicializar ícones Lucide
+        if (window.lucide) lucide.createIcons();
+      }
+    },
+
+    setField(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    },
+
+    setEstado(uf) {
+      const sel = document.getElementById('id_estado');
+      if (!sel) return;
+      for (const opt of sel.options) {
+        if (opt.value === uf) { opt.selected = true; break; }
+      }
+    },
+  };
+}
+</script>
+{% endblock %}

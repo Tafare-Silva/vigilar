@@ -1,0 +1,18 @@
+[Unit]
+Description=Vigilar — Celery Worker
+After=network.target redis.service
+
+[Service]
+User=vigilar
+Group=vigilar
+WorkingDirectory=/home/vigilar/app
+EnvironmentFile=/home/vigilar/app/.env
+ExecStart=/home/vigilar/app/.venv/bin/celery \
+    -A config worker \
+    --loglevel=info \
+    --concurrency=2
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

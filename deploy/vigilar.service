@@ -1,0 +1,18 @@
+[Unit]
+Description=Vigilar — Gunicorn WSGI server
+After=network.target postgresql.service redis.service
+
+[Service]
+User=vigilar
+Group=vigilar
+WorkingDirectory=/home/vigilar/app
+EnvironmentFile=/home/vigilar/app/.env
+ExecStart=/home/vigilar/app/.venv/bin/gunicorn \
+    --config /home/vigilar/app/deploy/gunicorn.conf.py \
+    config.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Painel{% endblock %} — {{ NOME_EMPRESA }}</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"DM Sans"', 'sans-serif'],
+            display: ['"Syne"', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50:  '#f0f4ff',
+              100: '#e0eaff',
+              200: '#c0d4ff',
+              400: '#6189fa',
+              500: '#3d65f5',
+              600: '#2748e8',
+              700: '#1f38d0',
+              800: '#1e30a8',
+            },
+          },
+        }
+      }
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: #f8fafc; color: #1e293b; margin: 0; }
+
+    /* ── Sidebar ─────────────────────────────── */
+    #sidebar {
+      width: 256px;
+      min-height: 100vh;
+      background: #fff;
+      border-right: 1px solid #e8edf5;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 40;
+      transition: transform 0.28s cubic-bezier(.4,0,.2,1), width 0.28s cubic-bezier(.4,0,.2,1);
+    }
+    #sidebar.collapsed {
+      width: 0;
+      overflow: hidden;
+    }
+    #main-content {
+      margin-left: 256px;
+      min-height: 100vh;
+      transition: margin 0.28s cubic-bezier(.4,0,.2,1);
+    }
+    #main-content.expanded {
+      margin-left: 0;
+    }
+
+    /* ── Nav links ───────────────────────────── */
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #64748b;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      margin: 1px 8px;
+    }
+    .nav-link:hover { background: #f1f5f9; color: #1e293b; }
+    .nav-link.active { background: #eef2ff; color: #2748e8; font-weight: 600; }
+    .nav-link.active .nav-icon { color: #2748e8 !important; }
+    .nav-icon { width: 17px; height: 17px; flex-shrink: 0; color: #94a3b8; }
+    .nav-section {
+      font-size: 0.67rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #94a3b8;
+      padding: 16px 20px 5px;
+    }
+
+    /* ── Cards ───────────────────────────────── */
+    .card { background: #fff; border: 1px solid #e8edf5; border-radius: 12px; }
+
+    /* ── Badges ──────────────────────────────── */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
+    .badge-green  { background: #dcfce7; color: #166534; }
+    .badge-red    { background: #fee2e2; color: #991b1b; }
+    .badge-yellow { background: #fef9c3; color: #854d0e; }
+    .badge-blue   { background: #dbeafe; color: #1e40af; }
+    .badge-gray   { background: #f1f5f9; color: #475569; }
+    .badge-orange { background: #ffedd5; color: #9a3412; }
+
+    /* ── Buttons ─────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 8px;
+      font-size: 0.875rem; font-weight: 500;
+      cursor: pointer; border: none; text-decoration: none;
+      transition: all 0.15s ease; white-space: nowrap; font-family: 'DM Sans', sans-serif;
+    }
+    .btn-primary { background: #2748e8; color: #fff; }
+    .btn-primary:hover { background: #1f38d0; box-shadow: 0 4px 12px rgb(39 72 232 / 0.28); }
+    .btn-secondary { background: #f1f5f9; color: #475569; }
+    .btn-secondary:hover { background: #e2e8f0; color: #1e293b; }
+    .btn-danger { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-sm { padding: 5px 10px; font-size: 0.8rem; border-radius: 6px; }
+    .btn-ghost { background: transparent; color: #64748b; }
+    .btn-ghost:hover { background: #f1f5f9; color: #1e293b; }
+
+    /* ── Form inputs ─────────────────────────── */
+    .form-input {
+      width: 100%; padding: 8px 12px;
+      border: 1px solid #e2e8f0; border-radius: 8px;
+      font-size: 0.875rem; background: #fff; color: #1e293b;
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .form-input:focus { border-color: #2748e8; box-shadow: 0 0 0 3px rgb(39 72 232 / 0.1); }
+    .form-input:disabled { background: #f8fafc; color: #94a3b8; }
+    .form-label { font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 4px; display: block; }
+    .form-select { appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 8px center; background-size: 18px; padding-right: 36px; }
+    .form-error { font-size: 0.75rem; color: #dc2626; margin-top: 4px; }
+
+    /* ── Table ───────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .data-table th { padding: 10px 16px; text-align: left; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #94a3b8; background: #f8fafc; border-bottom: 1px solid #e8edf5; white-space: nowrap; }
+    .data-table td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #334155; }
+    .data-table tbody tr:hover td { background: #f8fafc; }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+
+    /* ── Alerts ──────────────────────────────── */
+    .alert { padding: 12px 16px; border-radius: 8px; font-size: 0.875rem; display: flex; align-items: flex-start; gap: 10px; }
+    .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+    .alert-error   { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; }
+    .alert-warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .alert-info    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+
+    /* ── Dividers e misc ─────────────────────── */
+    .page-title { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 700; color: #0f172a; }
+    .page-subtitle { font-size: 0.85rem; color: #64748b; margin-top: 2px; }
+
+    /* ── Scrollbar ───────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+    /* ── Animations ──────────────────────────── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeInUp 0.25s ease forwards; }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+    .pulse-dot { animation: pulse-dot 2s infinite; }
+
+    /* ── Mobile ──────────────────────────────── */
+    #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 39; backdrop-filter: blur(2px); }
+    @media (max-width: 1024px) {
+      #sidebar { transform: translateX(-100%); }
+      #sidebar.open { transform: translateX(0); }
+      #main-content { margin-left: 0; }
+      #sidebar-overlay.show { display: block; }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="h-full" x-data="layoutApp()" x-init="init()">
+
+<!-- Overlay mobile -->
+<div id="sidebar-overlay"
+     :class="sidebarOpen ? 'show' : ''"
+     @click="sidebarOpen = false"></div>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<aside id="sidebar" :class="(sidebarOpen ? 'open' : '') + (sidebarCollapsed ? ' collapsed' : '')">
+
+  <!-- Logo / Nome da empresa -->
+  <div style="display:flex;align-items:center;gap:12px;padding:18px 16px;border-bottom:1px solid #f1f5f9;min-height:74px;">
+    {% if LOGO_EMPRESA %}
+      <img src="{{ LOGO_EMPRESA }}" alt="{{ NOME_EMPRESA }}"
+           style="height:38px;max-width:120px;object-fit:contain;flex-shrink:0;" />
+    {% else %}
+      <div style="width:38px;height:38px;background:linear-gradient(135deg,#2748e8 0%,#6189fa 100%);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgb(39 72 232 / 0.3);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+    {% endif %}
+    <div style="overflow:hidden;">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.92rem;color:#0f172a;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ NOME_EMPRESA }}</div>
+      <div style="font-size:0.67rem;color:#94a3b8;font-weight:500;letter-spacing:0.03em;">Gestão de Segurança</div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav style="flex:1;padding:8px 0;overflow-y:auto;">
+
+    <div class="nav-section">Principal</div>
+    <a href="{% url 'dashboard:index' %}" class="nav-link {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}">
+      <i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard
+    </a>
+
+    <div class="nav-section">Cadastros</div>
+    <a href="{% url 'clientes:lista' %}" class="nav-link {% if request.resolver_match.namespace == 'clientes' %}active{% endif %}">
+      <i data-lucide="users" class="nav-icon"></i> Clientes
+    </a>
+    <a href="{% url 'fornecedores:lista' %}" class="nav-link {% if request.resolver_match.namespace == 'fornecedores' %}active{% endif %}">
+      <i data-lucide="truck" class="nav-icon"></i> Fornecedores
+    </a>
+    <a href="{% url 'servicos:lista' %}" class="nav-link {% if request.resolver_match.namespace == 'servicos' %}active{% endif %}">
+      <i data-lucide="shield-check" class="nav-icon"></i> Serviços / Planos
+    </a>
+
+    <div class="nav-section">Operacional</div>
+    <a href="{% url 'contratos:lista' %}" class="nav-link {% if request.resolver_match.namespace == 'contratos' %}active{% endif %}">
+      <i data-lucide="file-text" class="nav-icon"></i> Contratos
+    </a>
+    <a href="{% url 'rondas:lista' %}" class="nav-link {% if request.resolver_match.namespace == 'rondas' %}active{% endif %}">
+      <i data-lucide="map-pin" class="nav-icon"></i> Rondas
+    </a>
+
+    <div class="nav-section">Financeiro</div>
+    <a href="{% url 'mensalidades:lista' %}" class="nav-link {% if request.resolver_match.namespace == 'mensalidades' %}active{% endif %}">
+      <i data-lucide="receipt" class="nav-icon"></i> Mensalidades
+    </a>
+    <a href="{% url 'boletos:lista' %}" class="nav-link {% if request.resolver_match.namespace == 'boletos' %}active{% endif %}">
+      <i data-lucide="barcode" class="nav-icon"></i> Boletos
+    </a>
+
+    <div class="nav-section">Sistema</div>
+    <a href="{% url 'configuracoes:empresa' %}" class="nav-link {% if request.resolver_match.namespace == 'configuracoes' %}active{% endif %}">
+      <i data-lucide="settings-2" class="nav-icon"></i> Configurações
+    </a>
+
+  </nav>
+
+  <!-- Usuário -->
+  <div style="border-top:1px solid #f1f5f9;padding:10px;">
+    <div x-data="{ open: false }" style="position:relative;">
+      <div @click="open = !open"
+           style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background 0.15s;"
+           class="hover:bg-slate-50">
+        <div style="width:32px;height:32px;background:linear-gradient(135deg,#e0eaff,#c0d4ff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:0.78rem;color:#2748e8;flex-shrink:0;">
+          {{ request.user.nome|slice:":2"|upper|default:"?" }}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.82rem;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ request.user.primeiro_nome|default:request.user.email }}</div>
+          <div style="font-size:0.68rem;color:#94a3b8;">{{ request.user.get_perfil_display }}</div>
+        </div>
+        <i data-lucide="chevrons-up-down" style="width:14px;height:14px;color:#94a3b8;flex-shrink:0;"></i>
+      </div>
+
+      <!-- Dropdown do usuário -->
+      <div x-show="open" x-transition:enter="transition ease-out duration-100"
+           x-transition:enter-start="opacity-0 scale-95"
+           x-transition:enter-end="opacity-100 scale-100"
+           @click.outside="open = false"
+           style="position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid #e8edf5;border-radius:10px;box-shadow:0 8px 24px rgb(0 0 0 / 0.1);padding:4px;z-index:50;">
+        <a href="#" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;font-size:0.82rem;color:#475569;text-decoration:none;" class="hover:bg-slate-50">
+          <i data-lucide="user" style="width:14px;height:14px;"></i> Meu perfil
+        </a>
+        <a href="#" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;font-size:0.82rem;color:#475569;text-decoration:none;" class="hover:bg-slate-50">
+          <i data-lucide="lock" style="width:14px;height:14px;"></i> Alterar senha
+        </a>
+        <div style="height:1px;background:#f1f5f9;margin:3px 0;"></div>
+        <a href="{% url 'account_logout' %}" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;font-size:0.82rem;color:#dc2626;text-decoration:none;" class="hover:bg-red-50">
+          <i data-lucide="log-out" style="width:14px;height:14px;"></i> Sair
+        </a>
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- Logo oculta para uso no recibo (jsPDF) -->
+{% if LOGO_EMPRESA %}
+<img id="empresa-logo-hidden" src="{{ LOGO_EMPRESA }}" alt="" crossorigin="anonymous"
+     style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;" />
+{% endif %}
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div id="main-content" :class="sidebarCollapsed ? 'expanded' : ''">
+
+  <!-- Topbar -->
+  <header style="background:#fff;border-bottom:1px solid #e8edf5;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:30;">
+
+    <div style="display:flex;align-items:center;gap:12px;">
+      <!-- Toggle sidebar desktop -->
+      <button @click="toggleSidebar()"
+              title="Recolher/expandir menu"
+              style="padding:6px;border-radius:8px;border:1px solid #e8edf5;background:#fff;cursor:pointer;display:flex;align-items:center;transition:background 0.15s;"
+              class="hover:bg-slate-50">
+        <i data-lucide="panel-left-close" x-show="!sidebarCollapsed" style="width:18px;height:18px;color:#64748b;"></i>
+        <i data-lucide="panel-left-open"  x-show="sidebarCollapsed"  style="width:18px;height:18px;color:#2748e8;display:none;"></i>
+      </button>
+      <!-- Mobile menu toggle -->
+      <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden"
+              style="padding:6px;border-radius:8px;border:1px solid #e8edf5;background:#fff;cursor:pointer;display:flex;">
+        <i data-lucide="menu" style="width:18px;height:18px;color:#64748b;"></i>
+      </button>
+
+      <!-- Breadcrumb -->
+      <nav style="display:flex;align-items:center;gap:5px;font-size:0.8rem;color:#94a3b8;">
+        <a href="{% url 'dashboard:index' %}" style="color:#94a3b8;text-decoration:none;transition:color 0.15s;" class="hover:text-slate-600">Início</a>
+        {% block breadcrumb %}{% endblock %}
+      </nav>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;">
+      {% block header_actions %}{% endblock %}
+
+      <!-- Notificações -->
+      <div x-data="{ open: false }" style="position:relative;">
+        <button @click="open = !open"
+                style="position:relative;padding:7px;border-radius:8px;border:1px solid #e8edf5;background:#fff;cursor:pointer;display:flex;align-items:center;transition:background 0.15s;"
+                class="hover:bg-slate-50">
+          <i data-lucide="bell" style="width:17px;height:17px;color:#64748b;"></i>
+        </button>
+        <div x-show="open" @click.outside="open = false" x-transition
+             style="position:absolute;top:calc(100% + 8px);right:0;width:290px;background:#fff;border:1px solid #e8edf5;border-radius:12px;box-shadow:0 8px 24px rgb(0 0 0 / 0.1);z-index:50;overflow:hidden;">
+          <div style="padding:12px 14px;border-bottom:1px solid #f1f5f9;">
+            <span style="font-weight:600;font-size:0.85rem;color:#1e293b;">Notificações</span>
+          </div>
+          <div style="padding:20px 14px;text-align:center;color:#94a3b8;font-size:0.82rem;">
+            <i data-lucide="bell-off" style="width:24px;height:24px;margin:0 auto 6px;display:block;color:#cbd5e1;"></i>
+            Nenhuma notificação
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mensagens Django -->
+  {% if messages %}
+  <div style="padding:16px 24px 0;">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} fade-in" style="margin-bottom:8px;"
+         x-data="{ show: true }" x-show="show">
+      {% if message.tags == 'success' %}<i data-lucide="check-circle" style="width:16px;height:16px;flex-shrink:0;"></i>
+      {% elif message.tags == 'error' %}<i data-lucide="x-circle" style="width:16px;height:16px;flex-shrink:0;"></i>
+      {% elif message.tags == 'warning' %}<i data-lucide="alert-triangle" style="width:16px;height:16px;flex-shrink:0;"></i>
+      {% else %}<i data-lucide="info" style="width:16px;height:16px;flex-shrink:0;"></i>{% endif %}
+      <span style="flex:1;">{{ message }}</span>
+      <button @click="show = false" style="background:none;border:none;cursor:pointer;opacity:0.5;padding:0;display:flex;">
+        <i data-lucide="x" style="width:14px;height:14px;"></i>
+      </button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Conteúdo -->
+  <main style="padding:24px;">
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
+
+<script>
+  lucide.createIcons();
+  document.addEventListener('htmx:afterSwap', () => lucide.createIcons());
+
+  function layoutApp() {
+    return {
+      sidebarOpen: false,
+      sidebarCollapsed: localStorage.getItem('sidebar_collapsed') === '1',
+
+      init() {
+        this.$watch('sidebarCollapsed', v => {
+          localStorage.setItem('sidebar_collapsed', v ? '1' : '0');
+        });
+      },
+
+      toggleSidebar() {
+        this.sidebarCollapsed = !this.sidebarCollapsed;
+        // Recria ícones após a transição
+        setTimeout(() => lucide.createIcons(), 300);
+      },
+    };
+  }
+
+  // Utilidade global: converte <img> em base64 para uso no jsPDF
+  function getLogoBase64() {
+    return new Promise(resolve => {
+      const img = document.getElementById('empresa-logo-hidden');
+      if (!img) return resolve(null);
+      const tryConvert = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width  = img.naturalWidth  || 200;
+          canvas.height = img.naturalHeight || 80;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } catch { resolve(null); }
+      };
+      if (img.complete && img.naturalWidth) tryConvert();
+      else { img.onload = tryConvert; img.onerror = () => resolve(null); }
+    });
+  }
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

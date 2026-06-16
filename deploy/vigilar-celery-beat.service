@@ -1,0 +1,18 @@
+[Unit]
+Description=Vigilar — Celery Beat Scheduler
+After=network.target redis.service
+
+[Service]
+User=vigilar
+Group=vigilar
+WorkingDirectory=/home/vigilar/app
+EnvironmentFile=/home/vigilar/app/.env
+ExecStart=/home/vigilar/app/.venv/bin/celery \
+    -A config beat \
+    --loglevel=info \
+    --scheduler django_celery_beat.schedulers:DatabaseScheduler
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

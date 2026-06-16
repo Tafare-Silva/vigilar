@@ -1,0 +1,447 @@
+{% extends "core/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block breadcrumb %}
+<i data-lucide="chevron-right" style="width:13px;height:13px;"></i>
+<span style="color:#1e293b;font-weight:500;">Dashboard</span>
+{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Cabeçalho da página ───────────────────────────────────── -->
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1 class="page-title">Bom dia, {{ request.user.primeiro_nome }} 👋</h1>
+    <p class="page-subtitle">Aqui está o resumo de hoje — {{ hoje|date:"l, d \d\e F \d\e Y" }}</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{% url 'clientes:novo' %}" class="btn btn-secondary btn-sm">
+      <i data-lucide="user-plus" style="width:14px;height:14px;"></i> Novo cliente
+    </a>
+    <a href="{% url 'contratos:novo' %}" class="btn btn-primary btn-sm">
+      <i data-lucide="plus" style="width:14px;height:14px;"></i> Novo contrato
+    </a>
+  </div>
+</div>
+
+<!-- ── KPIs principais ───────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:24px;">
+
+  <!-- Clientes ativos -->
+  <div class="card fade-in" style="padding:20px;animation-delay:0s;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+      <div style="width:40px;height:40px;background:#eff6ff;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <i data-lucide="users" style="width:20px;height:20px;color:#2748e8;"></i>
+      </div>
+      <span class="badge {% if variacao_clientes >= 0 %}badge-green{% else %}badge-red{% endif %}">
+        {% if variacao_clientes >= 0 %}+{% endif %}{{ variacao_clientes }}% mês
+      </span>
+    </div>
+    <div style="font-size:1.9rem;font-family:'Syne',sans-serif;font-weight:700;color:#0f172a;line-height:1;">{{ total_clientes_ativos }}</div>
+    <div style="font-size:0.8rem;color:#64748b;margin-top:4px;font-weight:500;">Clientes ativos</div>
+    <div style="height:1px;background:#f1f5f9;margin:12px 0;"></div>
+    <a href="{% url 'clientes:lista' %}" style="font-size:0.78rem;color:#2748e8;text-decoration:none;display:flex;align-items:center;gap:4px;font-weight:500;">
+      Ver todos <i data-lucide="arrow-right" style="width:12px;height:12px;"></i>
+    </a>
+  </div>
+
+  <!-- Contratos ativos -->
+  <div class="card fade-in" style="padding:20px;animation-delay:0.05s;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+      <div style="width:40px;height:40px;background:#f0fdf4;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <i data-lucide="file-check" style="width:20px;height:20px;color:#16a34a;"></i>
+      </div>
+      <span class="badge badge-green">ativos</span>
+    </div>
+    <div style="font-size:1.9rem;font-family:'Syne',sans-serif;font-weight:700;color:#0f172a;line-height:1;">{{ total_contratos_ativos }}</div>
+    <div style="font-size:0.8rem;color:#64748b;margin-top:4px;font-weight:500;">Contratos vigentes</div>
+    <div style="height:1px;background:#f1f5f9;margin:12px 0;"></div>
+    <a href="{% url 'contratos:lista' %}" style="font-size:0.78rem;color:#16a34a;text-decoration:none;display:flex;align-items:center;gap:4px;font-weight:500;">
+      Ver todos <i data-lucide="arrow-right" style="width:12px;height:12px;"></i>
+    </a>
+  </div>
+
+  <!-- Receita do mês -->
+  <div class="card fade-in" style="padding:20px;animation-delay:0.1s;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+      <div style="width:40px;height:40px;background:#f0fdf4;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <i data-lucide="trending-up" style="width:20px;height:20px;color:#16a34a;"></i>
+      </div>
+      <span class="badge badge-green">recebido</span>
+    </div>
+    <div style="font-size:1.9rem;font-family:'Syne',sans-serif;font-weight:700;color:#0f172a;line-height:1;">R$&nbsp;{{ receita_mes|floatformat:0 }}</div>
+    <div style="font-size:0.8rem;color:#64748b;margin-top:4px;font-weight:500;">Receita do mês</div>
+    <div style="height:1px;background:#f1f5f9;margin:12px 0;"></div>
+    <span style="font-size:0.78rem;color:#64748b;">Meta: R$ {{ meta_mes|floatformat:0|default:"—" }}</span>
+  </div>
+
+  <!-- Mensalidades vencidas -->
+  <div class="card fade-in" style="padding:20px;animation-delay:0.15s;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+      <div style="width:40px;height:40px;background:#fff1f2;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <i data-lucide="alert-circle" style="width:20px;height:20px;color:#dc2626;"></i>
+      </div>
+      {% if total_vencidas > 0 %}
+      <span class="badge badge-red">atenção</span>
+      {% else %}
+      <span class="badge badge-green">em dia</span>
+      {% endif %}
+    </div>
+    <div style="font-size:1.9rem;font-family:'Syne',sans-serif;font-weight:700;color:{% if total_vencidas > 0 %}#dc2626{% else %}#0f172a{% endif %};line-height:1;">{{ total_vencidas }}</div>
+    <div style="font-size:0.8rem;color:#64748b;margin-top:4px;font-weight:500;">Mensalidades vencidas</div>
+    <div style="height:1px;background:#f1f5f9;margin:12px 0;"></div>
+    <a href="{% url 'mensalidades:lista' %}?status=vencida" style="font-size:0.78rem;color:#dc2626;text-decoration:none;display:flex;align-items:center;gap:4px;font-weight:500;">
+      Ver detalhes <i data-lucide="arrow-right" style="width:12px;height:12px;"></i>
+    </a>
+  </div>
+
+  <!-- Inadimplência -->
+  <div class="card fade-in" style="padding:20px;animation-delay:0.2s;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+      <div style="width:40px;height:40px;background:#fffbeb;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <i data-lucide="percent" style="width:20px;height:20px;color:#d97706;"></i>
+      </div>
+    </div>
+    <div style="font-size:1.9rem;font-family:'Syne',sans-serif;font-weight:700;color:#0f172a;line-height:1;">{{ taxa_inadimplencia|floatformat:1 }}%</div>
+    <div style="font-size:0.8rem;color:#64748b;margin-top:4px;font-weight:500;">Taxa de inadimplência</div>
+    <div style="height:1px;background:#f1f5f9;margin:12px 0;"></div>
+    <div style="font-size:0.78rem;color:#64748b;">{{ total_inadimplentes }} cliente{{ total_inadimplentes|pluralize }}</div>
+  </div>
+
+  <!-- Rondas hoje -->
+  <div class="card fade-in" style="padding:20px;animation-delay:0.25s;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+      <div style="width:40px;height:40px;background:#f0f4ff;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <i data-lucide="map-pin" style="width:20px;height:20px;color:#2748e8;"></i>
+      </div>
+      <span class="badge badge-blue">hoje</span>
+    </div>
+    <div style="font-size:1.9rem;font-family:'Syne',sans-serif;font-weight:700;color:#0f172a;line-height:1;">{{ rondas_hoje }}</div>
+    <div style="font-size:0.8rem;color:#64748b;margin-top:4px;font-weight:500;">Rondas realizadas</div>
+    <div style="height:1px;background:#f1f5f9;margin:12px 0;"></div>
+    <a href="{% url 'rondas:lista' %}" style="font-size:0.78rem;color:#2748e8;text-decoration:none;display:flex;align-items:center;gap:4px;font-weight:500;">
+      Ver rondas <i data-lucide="arrow-right" style="width:12px;height:12px;"></i>
+    </a>
+  </div>
+
+</div>
+
+<!-- ── Gráficos ───────────────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px;">
+
+  <!-- Receita 12 meses -->
+  <div class="card fade-in" style="padding:20px;animation-delay:0.3s;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:#0f172a;">Receita Mensal</div>
+        <div style="font-size:0.78rem;color:#94a3b8;margin-top:2px;">Últimos 12 meses</div>
+      </div>
+      <select class="form-input form-select" style="width:auto;font-size:0.78rem;padding:5px 28px 5px 10px;">
+        <option>2025</option>
+        <option>2024</option>
+      </select>
+    </div>
+    <canvas id="chartReceita" style="max-height:220px;"></canvas>
+  </div>
+
+  <!-- Mensalidades por status (donut) -->
+  <div class="card fade-in" style="padding:20px;animation-delay:0.35s;">
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:#0f172a;">Mensalidades</div>
+      <div style="font-size:0.78rem;color:#94a3b8;margin-top:2px;">Status geral</div>
+    </div>
+    <canvas id="chartStatus" style="max-height:180px;"></canvas>
+    <!-- Legenda -->
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:#475569;">
+          <span style="width:10px;height:10px;border-radius:3px;background:#2748e8;display:inline-block;"></span> Pagas
+        </div>
+        <span style="font-size:0.78rem;font-weight:600;color:#0f172a;">{{ mensalidades_pagas }}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:#475569;">
+          <span style="width:10px;height:10px;border-radius:3px;background:#f59e0b;display:inline-block;"></span> Pendentes
+        </div>
+        <span style="font-size:0.78rem;font-weight:600;color:#0f172a;">{{ mensalidades_pendentes }}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:#475569;">
+          <span style="width:10px;height:10px;border-radius:3px;background:#ef4444;display:inline-block;"></span> Vencidas
+        </div>
+        <span style="font-size:0.78rem;font-weight:600;color:#0f172a;">{{ total_vencidas }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Alertas e tabelas ──────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+  <!-- Mensalidades vencendo em breve -->
+  <div class="card fade-in" style="animation-delay:0.4s;">
+    <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <i data-lucide="clock" style="width:16px;height:16px;color:#d97706;"></i>
+        <span style="font-weight:600;font-size:0.875rem;color:#0f172a;">Vencendo em 7 dias</span>
+        {% if mensalidades_vencendo %}
+        <span class="badge badge-yellow">{{ mensalidades_vencendo|length }}</span>
+        {% endif %}
+      </div>
+      <a href="{% url 'mensalidades:lista' %}?filtro=vencendo" style="font-size:0.75rem;color:#2748e8;text-decoration:none;font-weight:500;">Ver todas</a>
+    </div>
+
+    {% if mensalidades_vencendo %}
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Vencimento</th>
+            <th>Valor</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in mensalidades_vencendo %}
+          <tr>
+            <td>
+              <div style="font-weight:500;color:#1e293b;font-size:0.82rem;">{{ m.contrato.cliente.nome_exibicao }}</div>
+              <div style="font-size:0.72rem;color:#94a3b8;">Parcela {{ m.numero_parcela }}/{{ m.contrato.numero_mensalidades }}</div>
+            </td>
+            <td>
+              <span style="font-size:0.82rem;font-weight:500;color:#d97706;">
+                {{ m.data_vencimento|date:"d/m/Y" }}
+              </span>
+            </td>
+            <td style="font-weight:600;font-size:0.82rem;">R$ {{ m.valor|floatformat:2 }}</td>
+            <td>
+              <a href="{% url 'mensalidades:detalhe' m.pk %}" class="btn btn-ghost btn-sm">
+                <i data-lucide="eye" style="width:13px;height:13px;"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding:32px;text-align:center;color:#94a3b8;">
+      <i data-lucide="check-circle" style="width:28px;height:28px;margin:0 auto 8px;display:block;color:#86efac;"></i>
+      <span style="font-size:0.82rem;">Nenhuma mensalidade vencendo nos próximos 7 dias</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Últimos clientes -->
+  <div class="card fade-in" style="animation-delay:0.45s;">
+    <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <i data-lucide="user-plus" style="width:16px;height:16px;color:#2748e8;"></i>
+        <span style="font-weight:600;font-size:0.875rem;color:#0f172a;">Novos clientes</span>
+      </div>
+      <a href="{% url 'clientes:lista' %}" style="font-size:0.75rem;color:#2748e8;text-decoration:none;font-weight:500;">Ver todos</a>
+    </div>
+
+    {% if ultimos_clientes %}
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th>Cadastro</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cliente in ultimos_clientes %}
+          <tr>
+            <td>
+              <a href="{% url 'clientes:detalhe' cliente.pk %}"
+                 style="font-weight:500;color:#1e293b;text-decoration:none;font-size:0.82rem;transition:color 0.15s;"
+                 class="hover:text-primary-600">
+                {{ cliente.nome_exibicao }}
+              </a>
+              <div style="font-size:0.72rem;color:#94a3b8;">{{ cliente.cidade }}{% if cliente.estado %}/{{ cliente.estado }}{% endif %}</div>
+            </td>
+            <td>
+              <span class="badge badge-gray" style="font-size:0.68rem;">{{ cliente.get_tipo_pessoa_display }}</span>
+            </td>
+            <td style="font-size:0.78rem;color:#64748b;">{{ cliente.data_cadastro|date:"d/m/Y" }}</td>
+            <td>
+              {% if cliente.status == 'ativo' %}<span class="badge badge-green">Ativo</span>
+              {% elif cliente.status == 'inadimplente' %}<span class="badge badge-red">Inadimp.</span>
+              {% elif cliente.status == 'suspenso' %}<span class="badge badge-yellow">Suspenso</span>
+              {% else %}<span class="badge badge-gray">{{ cliente.get_status_display }}</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding:32px;text-align:center;color:#94a3b8;">
+      <i data-lucide="users" style="width:28px;height:28px;margin:0 auto 8px;display:block;color:#cbd5e1;"></i>
+      <span style="font-size:0.82rem;">Nenhum cliente cadastrado ainda</span>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- ── Contratos vencendo ─────────────────────────────────────── -->
+{% if contratos_vencendo %}
+<div class="card fade-in" style="margin-top:16px;animation-delay:0.5s;">
+  <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px;">
+    <i data-lucide="file-warning" style="width:16px;height:16px;color:#dc2626;"></i>
+    <span style="font-weight:600;font-size:0.875rem;color:#0f172a;">Contratos vencendo em 30 dias</span>
+    <span class="badge badge-red">{{ contratos_vencendo|length }}</span>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Nº Contrato</th>
+          <th>Cliente</th>
+          <th>Serviço</th>
+          <th>Término</th>
+          <th>Valor/mês</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contratos_vencendo %}
+        <tr>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:#64748b;">{{ c.numero_contrato }}</td>
+          <td>
+            <a href="{% url 'clientes:detalhe' c.cliente.pk %}"
+               style="font-weight:500;color:#1e293b;text-decoration:none;font-size:0.82rem;" class="hover:text-primary-600">
+              {{ c.cliente.nome_exibicao }}
+            </a>
+          </td>
+          <td style="font-size:0.82rem;color:#64748b;">{{ c.servico.nome }}</td>
+          <td>
+            <span style="font-weight:500;color:#dc2626;font-size:0.82rem;">{{ c.data_fim|date:"d/m/Y" }}</span>
+            <span style="font-size:0.72rem;color:#94a3b8;margin-left:4px;">({{ c.dias_para_vencer }}d)</span>
+          </td>
+          <td style="font-weight:600;font-size:0.82rem;">R$ {{ c.valor_mensal|floatformat:2 }}</td>
+          <td>
+            <a href="{% url 'contratos:renovar' c.pk %}" class="btn btn-secondary btn-sm">
+              <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i> Renovar
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Gráfico de Receita (barras) ─────────────────────────────
+const ctxReceita = document.getElementById('chartReceita');
+if (ctxReceita) {
+  const labels = {{ labels_meses|safe }};
+  const dados  = {{ dados_receita|safe }};
+
+  new Chart(ctxReceita, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Receita (R$)',
+        data: dados,
+        backgroundColor: (ctx) => {
+          const chart = ctx.chart;
+          const {ctx: c, chartArea} = chart;
+          if (!chartArea) return '#2748e8';
+          const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          gradient.addColorStop(0, '#2748e8');
+          gradient.addColorStop(1, '#6189fa');
+          return gradient;
+        },
+        borderRadius: 6,
+        borderSkipped: false,
+        maxBarThickness: 36,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` R$ ${ctx.parsed.y.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`
+          },
+          backgroundColor: '#1e293b',
+          titleFont: { family: 'DM Sans', size: 12 },
+          bodyFont: { family: 'DM Sans', size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { font: { family: 'DM Sans', size: 11 }, color: '#94a3b8' }
+        },
+        y: {
+          grid: { color: '#f1f5f9', drawBorder: false },
+          border: { display: false, dash: [4, 4] },
+          ticks: {
+            font: { family: 'DM Sans', size: 11 },
+            color: '#94a3b8',
+            callback: (v) => 'R$ ' + v.toLocaleString('pt-BR')
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Gráfico de status (donut) ───────────────────────────────
+const ctxStatus = document.getElementById('chartStatus');
+if (ctxStatus) {
+  new Chart(ctxStatus, {
+    type: 'doughnut',
+    data: {
+      labels: ['Pagas', 'Pendentes', 'Vencidas'],
+      datasets: [{
+        data: [{{ mensalidades_pagas }}, {{ mensalidades_pendentes }}, {{ total_vencidas }}],
+        backgroundColor: ['#2748e8', '#f59e0b', '#ef4444'],
+        borderWidth: 0,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleFont: { family: 'DM Sans', size: 12 },
+          bodyFont: { family: 'DM Sans', size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+        }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

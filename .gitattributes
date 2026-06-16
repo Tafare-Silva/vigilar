@@ -1,0 +1,14 @@
+# Normaliza line endings para LF no repositório (compatível com Linux)
+* text=auto eol=lf
+
+# Binários — não tocar nos line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary

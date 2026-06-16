@@ -1,0 +1,208 @@
+{% extends "core/base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block breadcrumb %}
+  <i data-lucide="chevron-right" style="width:13px;height:13px;"></i>
+  <a href="{% url 'contratos:lista' %}" style="color:#64748b;text-decoration:none;">Contratos</a>
+  <i data-lucide="chevron-right" style="width:13px;height:13px;"></i>
+  <span style="color:#1e293b;font-weight:500;">{{ titulo }}</span>
+{% endblock %}
+
+{% block content %}
+<div x-data="contratoForm()">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1 class="page-title">{{ titulo }}</h1>
+      <p class="page-subtitle">Preencha os dados do contrato — as mensalidades serão geradas automaticamente</p>
+    </div>
+    <a href="{% url 'contratos:lista' %}" class="btn btn-secondary">
+      <i data-lucide="arrow-left" style="width:15px;height:15px;"></i> Voltar
+    </a>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;">
+
+      <!-- Coluna principal -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Cliente e Serviço -->
+        <div class="card" style="padding:24px;">
+          <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:#0f172a;margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+            <i data-lucide="users" style="width:17px;height:17px;color:#2748e8;"></i>
+            Partes do contrato
+          </h3>
+          <div style="display:grid;gap:16px;">
+            <div>
+              <label class="form-label">Cliente <span style="color:#dc2626;">*</span></label>
+              {{ form.cliente }}
+              {% if form.cliente.errors %}<p class="form-error">{{ form.cliente.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="form-label">Serviço / Plano <span style="color:#dc2626;">*</span></label>
+              <select name="servico" class="form-input form-select"
+                      @change="onServicoChange($event.target)">
+                <option value="">Selecione o serviço…</option>
+                {% for s in form.servico.field.queryset %}
+                <option value="{{ s.pk }}"
+                        data-valor="{{ s.valor_mensal }}"
+                        data-duracao="{{ s.duracao_minima_meses }}"
+                        {% if form.servico.value == s.pk|stringformat:"s" %}selected{% endif %}>
+                  {{ s.nome }} — R$ {{ s.valor_mensal|floatformat:2 }}/mês
+                </option>
+                {% endfor %}
+              </select>
+              {% if form.servico.errors %}<p class="form-error">{{ form.servico.errors|join:", " }}</p>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Valores e prazo -->
+        <div class="card" style="padding:24px;">
+          <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:#0f172a;margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+            <i data-lucide="dollar-sign" style="width:17px;height:17px;color:#2748e8;"></i>
+            Valores e prazo
+          </h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;">
+
+            <div>
+              <label class="form-label">Valor mensal (R$) <span style="color:#dc2626;">*</span></label>
+              <div style="position:relative;">
+                <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:0.8rem;color:#94a3b8;font-weight:600;">R$</span>
+                <input type="number" name="valor_mensal" class="form-input" style="padding-left:30px;"
+                       step="0.01" min="0.01" placeholder="0,00"
+                       x-model="valorMensal"
+                       value="{{ form.valor_mensal.value|default:'' }}" />
+              </div>
+              {% if form.valor_mensal.errors %}<p class="form-error">{{ form.valor_mensal.errors|join:", " }}</p>{% endif %}
+            </div>
+
+            <div>
+              <label class="form-label">Desconto (R$)</label>
+              <div style="position:relative;">
+                <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:0.8rem;color:#94a3b8;font-weight:600;">R$</span>
+                <input type="number" name="desconto" class="form-input" style="padding-left:30px;"
+                       step="0.01" min="0" placeholder="0,00"
+                       x-model="desconto"
+                       value="{{ form.desconto.value|default:'0' }}" />
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label">Nº de mensalidades <span style="color:#dc2626;">*</span></label>
+              <input type="number" name="numero_mensalidades" class="form-input"
+                     min="1" max="120" placeholder="12"
+                     x-model="numMensalidades"
+                     value="{{ form.numero_mensalidades.value|default:'' }}" />
+              {% if form.numero_mensalidades.errors %}<p class="form-error">{{ form.numero_mensalidades.errors|join:", " }}</p>{% endif %}
+            </div>
+
+            <div>
+              <label class="form-label">Data de início <span style="color:#dc2626;">*</span></label>
+              <input type="date" name="data_inicio" class="form-input"
+                     value="{{ form.data_inicio.value|default:hoje }}" />
+              {% if form.data_inicio.errors %}<p class="form-error">{{ form.data_inicio.errors|join:", " }}</p>{% endif %}
+            </div>
+
+            <div>
+              <label class="form-label">Dia de vencimento <span style="color:#dc2626;">*</span></label>
+              <select name="dia_vencimento" class="form-input form-select">
+                {% for dia in dias_vencimento %}
+                <option value="{{ dia }}"
+                  {% if form.dia_vencimento.value == dia|stringformat:"s" %}selected
+                  {% elif not form.dia_vencimento.value and dia == 10 %}selected{% endif %}>
+                  Todo dia {{ dia }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="card" style="padding:24px;">
+          <label class="form-label">Observações</label>
+          <textarea name="observacoes" class="form-input" rows="3"
+                    placeholder="Observações internas sobre o contrato…">{{ form.observacoes.value|default:'' }}</textarea>
+        </div>
+
+      </div>
+
+      <!-- Coluna lateral: resumo -->
+      <div style="position:sticky;top:76px;display:flex;flex-direction:column;gap:12px;">
+
+        <div class="card" style="padding:20px;">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.88rem;color:#0f172a;margin-bottom:16px;display:flex;align-items:center;gap:7px;">
+            <i data-lucide="calculator" style="width:16px;height:16px;color:#2748e8;"></i>
+            Resumo do contrato
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="font-size:0.8rem;color:#64748b;">Valor/mês</span>
+              <span style="font-weight:600;font-size:0.875rem;color:#0f172a;"
+                    x-text="'R$ ' + fmt(valorMensal)">R$ 0,00</span>
+            </div>
+            <div x-show="desconto > 0" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="font-size:0.8rem;color:#64748b;">Desconto</span>
+              <span style="font-weight:600;font-size:0.875rem;color:#16a34a;"
+                    x-text="'- R$ ' + fmt(desconto)"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+              <span style="font-size:0.8rem;color:#64748b;">Mensalidades</span>
+              <span style="font-weight:600;font-size:0.875rem;color:#0f172a;"
+                    x-text="numMensalidades + 'x'">0x</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+              <span style="font-size:0.85rem;font-weight:600;color:#0f172a;">Total</span>
+              <span style="font-weight:700;font-size:1.1rem;color:#2748e8;font-family:'Syne',sans-serif;"
+                    x-text="'R$ ' + fmt((parseFloat(valorMensal||0) - parseFloat(desconto||0)) * parseInt(numMensalidades||0))">R$ 0,00</span>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;padding:12px;background:#f0f4ff;border-radius:8px;font-size:0.78rem;color:#2748e8;display:flex;align-items:flex-start;gap:7px;">
+            <i data-lucide="info" style="width:14px;height:14px;flex-shrink:0;margin-top:1px;"></i>
+            As mensalidades serão geradas automaticamente ao salvar o contrato.
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">
+          <i data-lucide="file-check" style="width:16px;height:16px;"></i>
+          Criar contrato e gerar mensalidades
+        </button>
+
+        <a href="{% url 'contratos:lista' %}" class="btn btn-secondary" style="width:100%;justify-content:center;">
+          <i data-lucide="x" style="width:15px;height:15px;"></i> Cancelar
+        </a>
+
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function contratoForm() {
+  return {
+    valorMensal: {{ form.valor_mensal.value|default:'0' }},
+    desconto: {{ form.desconto.value|default:'0' }},
+    numMensalidades: {{ form.numero_mensalidades.value|default:'12' }},
+
+    fmt(val) {
+      return parseFloat(val || 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    },
+
+    onServicoChange(select) {
+      const opt = select.options[select.selectedIndex];
+      if (opt.dataset.valor) this.valorMensal = parseFloat(opt.dataset.valor);
+      if (opt.dataset.duracao) this.numMensalidades = parseInt(opt.dataset.duracao);
+    },
+  };
+}
+</script>
+{% endblock %}
