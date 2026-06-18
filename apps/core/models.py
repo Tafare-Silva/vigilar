@@ -100,24 +100,31 @@ class BaseModel(models.Model):
 
 class UsuarioManager(BaseUserManager):
 
-    def create_user(self, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError(_("O e-mail é obrigatório."))
-        email = self.normalize_email(email)
+    def create_user(self, username, email=None, password=None, **extra_fields):
+        if not username:
+            raise ValueError("O nome de usuário (username) é obrigatório.")
+            
+        if email:
+            email = self.normalize_email(email)
+        else:
+            email = ""  # Deixa vazio caso não seja preenchido no terminal
+
         extra_fields.setdefault("is_active", True)
-        user = self.model(email=email, **extra_fields)
+        
+        # Aqui passamos o username e o email corretamente para o modelo
+        user = self.model(username=username, email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, **extra_fields):
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("perfil", Usuario.Perfil.ADMIN)
-        if "username" not in extra_fields:
-            extra_fields["username"] = email.split("@")[0]
-    
-        return self.create_user(email, password, **extra_fields)
+
+        # Removemos o bloco 'if "username" not in extra_fields' que usava o split do email
+
+        return self.create_user(username, email, password, **extra_fields)
 
 
 class Usuario(AbstractBaseUser, PermissionsMixin):
