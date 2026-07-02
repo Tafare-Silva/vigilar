@@ -140,9 +140,51 @@ def cliente_editar(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     if request.method == "POST":
         form = ClienteForm(request.POST, instance=cliente)
+        criar_contrato = request.POST.get("criar_contrato") == "1"
+
         if form.is_valid():
-            cliente = form.save()
-            messages.success(request, f"Cliente {cliente.nome_exibicao} atualizado com sucesso!")
+            erros_contrato = []
+            if criar_contrato:
+                if not request.POST.get("servico_id"):
+                    erros_contrato.append("Selecione um serviço.")
+                if not request.POST.get("valor_mensal"):
+                    erros_contrato.append("Informe o valor da mensalidade.")
+                if not request.POST.get("num_mensalidades"):
+                    erros_contrato.append("Informe a quantidade de mensalidades.")
+                if not request.POST.get("data_inicio"):
+                    erros_contrato.append("Informe a data de início.")
+                if not request.POST.get("dia_vencimento"):
+                    erros_contrato.append("Informe o dia de vencimento.")
+
+            if erros_contrato:
+                for e in erros_contrato:
+                    messages.error(request, e)
+                return render(request, "clientes/form.html", _contexto_form(form, editando=True, cliente=cliente))
+
+            with transaction.atomic():
+                cliente = form.save()
+
+                if criar_contrato:
+                    servico = Servico.objects.get(pk=request.POST["servico_id"])
+                    contrato = Contrato.objects.create(
+                        cliente=cliente,
+                        servico=servico,
+                        data_inicio=request.POST["data_inicio"],
+                        numero_mensalidades=int(request.POST["num_mensalidades"]),
+                        valor_mensal=request.POST["valor_mensal"],
+                        dia_vencimento=int(request.POST["dia_vencimento"]),
+                        status=Contrato.Status.ATIVO,
+                        responsavel=request.user,
+                    )
+                    messages.success(
+                        request,
+                        f"Cliente {cliente.nome_exibicao} atualizado! "
+                        f"{contrato.numero_mensalidades} mensalidade(s) gerada(s) — "
+                        f"contrato {contrato.numero_contrato}."
+                    )
+                else:
+                    messages.success(request, f"Cliente {cliente.nome_exibicao} atualizado com sucesso!")
+
             return redirect("clientes:detalhe", pk=cliente.pk)
         else:
             messages.error(request, "Corrija os erros abaixo antes de salvar.")

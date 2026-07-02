@@ -313,7 +313,6 @@
     </div>
 
     <!-- ── Criar contrato e mensalidades (opcional) ─────────── -->
-    {% if not editando %}
     <div class="card" style="margin-bottom:24px;overflow:hidden;" x-data="contratoInline()">
 
       <!-- Cabeçalho clicável -->
@@ -442,7 +441,7 @@
 
       </div>
     </div>
-    {% endif %}
+
 
     <!-- ── Barra de ações fixa ────────────────────────────── -->
     <div style="position:sticky;bottom:0;background:#fff;border-top:1px solid #e8edf5;padding:14px 24px;margin:-24px;margin-top:0;border-radius:0 0 12px 12px;display:flex;align-items:center;justify-content:space-between;z-index:20;">
